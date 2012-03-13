@@ -22,13 +22,16 @@ griffon.project.dependency.resolution = {
         // flatDir name: "${pluginName}LibDir", dirs: ["${basePath}lib"]
     }
     dependencies {
-        compile('org.apache.hbase:hbase:0.90.4',
-                'org.apache.hadoop:hadoop-core:1.0.1',
+        compile('org.apache.hbase:hbase:0.92.0',
                 'org.apache.zookeeper:zookeeper:3.4.3') {
             transitive = false
         }
-        compile 'commons-lang:commons-lang:2.5',
-                'commons-codec:commons-codec:1.4',
+        compile('org.apache.hadoop:hadoop-core:1.0.1') {
+            excludes('commons-cli', 'jetty', 'jetty-util', 'jasper-runtime', 'jasper-compiler',
+                     'jsp-api-2.1', 'jsp-2.1', 'commons-el', 'jets3t', 'kfs', 'hsqldb', 'commons-logging')
+            exclude module: 'org.eclispse.jdt', name: 'core'
+        }
+        compile 'commons-lang:commons-lang:2.6',
                 'com.google.guava:guava:11.0.2'
     }
 }

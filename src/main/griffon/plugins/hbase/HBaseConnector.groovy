@@ -89,7 +89,7 @@ final class HBaseConnector implements HBaseProvider {
     }
 
     private Configuration startHBase(ConfigObject config) {
-        Configuration hadoopConfig = new Configuration()
+        Configuration hadoopConfig = HBaseConfiguration.create()
         for (entry in config) {
             if (entry.key == 'resources') {
                 for (resource in entry.value) {
@@ -99,7 +99,7 @@ final class HBaseConnector implements HBaseProvider {
                 hadoopConfig.set(entry.key, String.valueOf(entry.value))
             }
         }
-        return HBaseConfiguration.create(hadoopConfig)
+        hadoopConfig
     }
 
     /*

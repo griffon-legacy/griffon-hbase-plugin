@@ -36,13 +36,13 @@ class ConfigurationHolder implements HBaseProvider {
 
     Object withHBase(String configName = 'default', Closure closure) {
         Configuration configuration = fetchConfiguration(configName)
-        if (LOG.debugEnabled) LOG.debug("Executing statement on '$configName'")
+        if (LOG.debugEnabled) LOG.debug("Executing statements on '$configName'")
         return closure(configName, configuration)
     }
 
     public <T> T withHBase(String configName = 'default', CallableWithArgs<T> callable) {
         Configuration configuration = fetchConfiguration(configName)
-        if (LOG.debugEnabled) LOG.debug("Executing statement on '$configName'")
+        if (LOG.debugEnabled) LOG.debug("Executing statements on '$configName'")
         callable.args = [configName, configuration] as Object[]
         return callable.call()
     }
@@ -50,16 +50,24 @@ class ConfigurationHolder implements HBaseProvider {
     Object withHTable(String configName = 'default', String tableName, Closure closure) {
         Configuration configuration = fetchConfiguration(configName)
         HTable table = new HTable(configuration, tableName)
-        if (LOG.debugEnabled) LOG.debug("Executing statement on '$configName' and table '$tableName'")
-        return closure(configName, tableName, configuration, table)
+        if (LOG.debugEnabled) LOG.debug("Executing statements on '$configName' and table '$tableName'")
+        try {
+            return closure(configName, configuration, tableName, table)
+        } finally {
+            table.close()
+        }
     }
 
     public <T> T withHTable(String configName = 'default', String tableName, CallableWithArgs<T> callable) {
         Configuration configuration = fetchConfiguration(configName)
         HTable table = new HTable(configuration, tableName)
-        if (LOG.debugEnabled) LOG.debug("Executing statement on '$configName' and table '$tableName'")
-        callable.args = [configName, tableName, configuration, table] as Object[]
-        return callable.call()
+        if (LOG.debugEnabled) LOG.debug("Executing statements on '$configName' and table '$tableName'")
+        callable.args = [configName, configuration, tableName, table] as Object[]
+        try{
+            return callable.call()
+        } finally {
+            table.close()
+        }
     }
 
     String[] getConfigurationNames() {

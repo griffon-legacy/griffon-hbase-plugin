@@ -60,7 +60,8 @@ Upon installation the plugin will generate the following artifacts in `$appdir/g
 
 Two dynamic methods named `withHBase` and `withHTable` will be injected into all controllers,
 giving you access to a `org.apache.hadoop.conf.Configuration` object, with which you'll be able
-to make calls to the database. Remember to make all database calls off the EDT
+to make calls to the database. In particular `withHTable` will automatically close the table for your.
+Remember to make all database calls off the EDT
 otherwise your application may appear unresponsive when doing long computations
 inside the EDT.
 These methods are aware of multiple databases. If no configName is specified when calling
@@ -168,7 +169,7 @@ This implementation may be used in the following way
     }
 
 
-[1]: http://project-hbase.com
+[1]: http://hbase.apache.org/
 [2]: https://github.com/aalmiray/griffon_sample_apps/tree/master/persistence/hbase
 '''
 }
