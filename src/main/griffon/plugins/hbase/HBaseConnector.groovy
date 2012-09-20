@@ -18,6 +18,7 @@ package griffon.plugins.hbase
 
 import griffon.core.GriffonApplication
 import griffon.util.CallableWithArgs
+import griffon.util.ConfigUtils
 import griffon.util.Environment
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.HBaseConfiguration
@@ -52,8 +53,7 @@ final class HBaseConnector implements HBaseProvider {
     // ======================================================
 
     ConfigObject createConfig(GriffonApplication app) {
-        def clientClass = app.class.classLoader.loadClass('HBaseConfig')
-        new ConfigSlurper(Environment.current.name).parse(clientClass)
+        ConfigUtils.loadConfigWithI18n('HBaseConfig')
     }
 
     private ConfigObject narrowConfig(ConfigObject config, String configName) {

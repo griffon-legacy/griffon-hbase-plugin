@@ -19,9 +19,9 @@
  */
 class HbaseGriffonPlugin {
     // the plugin version
-    String version = '0.1'
+    String version = '0.2'
     // the version or versions of Griffon the plugin is designed for
-    String griffonVersion = '0.9.5 > *'
+    String griffonVersion = '1.1.0 > *'
     // the other plugins this plugin depends on
     Map dependsOn = [:]
     // resources that are included in plugin packaging
@@ -64,29 +64,30 @@ to make calls to the database. In particular `withHTable` will automatically clo
 Remember to make all database calls off the EDT
 otherwise your application may appear unresponsive when doing long computations
 inside the EDT.
+
 These methods are aware of multiple databases. If no configName is specified when calling
 it then the default database will be selected. Here are two example usages, the first
 queries against the default database while the second queries a database whose name has
 been configured as 'internal'
 
-	package sample
-	class SampleController {
-	    def queryAllDatabases = {
-	        withHBase { configName, configuration -> ... }
-	        withHBase('internal') { configName, configuration -> ... }
-	    }
-	}
+    package sample
+    class SampleController {
+        def queryAllDatabases = {
+            withHBase { configName, configuration -> ... }
+            withHBase('internal') { configName, configuration -> ... }
+        }
+    }
 
 Querying a particular table can be done in the following way
 
-	package sample
-	class SampleController {
-	    def queryPersonTable = {
-	        withHTable('person') { configName, configuration, tableName, htable -> ... }
-	        withHTable('default', 'person') { configName, configuration, tableName, htable -> ... }
-	    }
-	}	
-	
+    package sample
+    class SampleController {
+        def queryPersonTable = {
+            withHTable('person') { configName, configuration, tableName, htable -> ... }
+            withHTable('default', 'person') { configName, configuration, tableName, htable -> ... }
+        }
+    }   
+
 These methods are also accessible to any component through the singleton `griffon.plugins.hbase.HBaseConnector`.
 You can inject these methods to non-artifacts via metaclasses. Simply grab hold of a particular metaclass and call
 `HBaseEnhancer.enhance(metaClassInstance, hbaseProviderInstance)`.
@@ -155,9 +156,9 @@ fails regardless of the arguments it receives
         Object withHBase(String configName = 'default', Closure closure) { null }
         public <T> T withHBase(String configName = 'default', CallableWithArgs<T> callable) { null }
         Object withHTable(String configName = 'default', String tableName, Closure closure) { null }
-        public <T> T withHTable(String configName = 'default', String tableName, CallableWithArgs<T> callable) { null }     
+        public <T> T withHTable(String configName = 'default', String tableName, CallableWithArgs<T> callable) { null }
     }
-    
+
 This implementation may be used in the following way
 
     class MyServiceTests extends GriffonUnitTestCase {

@@ -37,7 +37,7 @@ class HbaseGriffonAddon {
         }
     }
 
-    def events = [
+    Map events = [
         ShutdownStart: { app ->
             ConfigObject config = HBaseConnector.instance.createConfig(app)
             HBaseConnector.instance.disconnect(app, config)
