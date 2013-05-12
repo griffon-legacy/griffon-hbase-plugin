@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,86 +16,59 @@
 
 package griffon.plugins.hbase
 
+import org.apache.hadoop.conf.Configuration
+
 import griffon.core.GriffonApplication
 import griffon.util.ApplicationHolder
-import griffon.util.CallableWithArgs
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.client.HTable
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import static griffon.util.GriffonNameUtils.isBlank
 
 /**
  * @author Andres Almiray
  */
-@Singleton
-class ConfigurationHolder implements HBaseProvider {
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigurationHolder)
+class ConfigurationHolder {
+    private static final String DEFAULT = 'default'
     private static final Object[] LOCK = new Object[0]
     private final Map<String, Configuration> configurations = [:]
 
-    Object withHBase(String configName = 'default', Closure closure) {
-        Configuration configuration = fetchConfiguration(configName)
-        if (LOG.debugEnabled) LOG.debug("Executing statements on '$configName'")
-        return closure(configName, configuration)
+    private static final ConfigurationHolder INSTANCE
+
+    static {
+        INSTANCE = new ConfigurationHolder()
     }
 
-    public <T> T withHBase(String configName = 'default', CallableWithArgs<T> callable) {
-        Configuration configuration = fetchConfiguration(configName)
-        if (LOG.debugEnabled) LOG.debug("Executing statements on '$configName'")
-        callable.args = [configName, configuration] as Object[]
-        return callable.call()
+    static ConfigurationHolder getInstance() {
+        INSTANCE
     }
 
-    Object withHTable(String configName = 'default', String tableName, Closure closure) {
-        Configuration configuration = fetchConfiguration(configName)
-        HTable table = new HTable(configuration, tableName)
-        if (LOG.debugEnabled) LOG.debug("Executing statements on '$configName' and table '$tableName'")
-        try {
-            return closure(configName, configuration, tableName, table)
-        } finally {
-            table.close()
-        }
-    }
-
-    public <T> T withHTable(String configName = 'default', String tableName, CallableWithArgs<T> callable) {
-        Configuration configuration = fetchConfiguration(configName)
-        HTable table = new HTable(configuration, tableName)
-        if (LOG.debugEnabled) LOG.debug("Executing statements on '$configName' and table '$tableName'")
-        callable.args = [configName, configuration, tableName, table] as Object[]
-        try{
-            return callable.call()
-        } finally {
-            table.close()
-        }
-    }
+    private ConfigurationHolder() {}
 
     String[] getConfigurationNames() {
         List<String> configNames = new ArrayList().addAll(configurations.keySet())
         configNames.toArray(new String[configNames.size()])
     }
 
-    Configuration getConfiguration(String configName = 'default') {
-        if (isBlank(configName)) configName = 'default'
+    Configuration getConfiguration(String configName = DEFAULT) {
+        if (isBlank(configName)) configName = DEFAULT
         retrieveConfiguration(configName)
     }
 
-    void setConfiguration(String configName = 'default', Configuration configuration) {
-        if (isBlank(configName)) configName = 'default'
+    void setConfiguration(String configName = DEFAULT, Configuration configuration) {
+        if (isBlank(configName)) configName = DEFAULT
         storeConfiguration(configName, configuration)
     }
 
     boolean isConfigurationConnected(String configName) {
-        if (isBlank(configName)) configName = 'default'
+        if (isBlank(configName)) configName = DEFAULT
         retrieveConfiguration(configName) != null
     }
-
+    
     void disconnectConfiguration(String configName) {
-        if (isBlank(configName)) configName = 'default'
+        if (isBlank(configName)) configName = DEFAULT
         storeConfiguration(configName, null)
     }
 
-    private Configuration fetchConfiguration(String configName) {
+    Configuration fetchConfiguration(String configName) {
+        if (isBlank(configName)) configName = DEFAULT
         Configuration configuration = retrieveConfiguration(configName)
         if (configuration == null) {
             GriffonApplication app = ApplicationHolder.application
@@ -104,20 +77,20 @@ class ConfigurationHolder implements HBaseProvider {
         }
 
         if (configuration == null) {
-            throw new IllegalArgumentException("No such Configuration configuration for name $configName")
+            throw new IllegalArgumentException("No such HBase configuration configuration for name $configName")
         }
         configuration
     }
 
-    private void storeConfiguration(String configName, Configuration configuration) {
-        synchronized (LOCK) {
-            configurations[configName] = configuration
+    private Configuration retrieveConfiguration(String configName) {
+        synchronized(LOCK) {
+            configurations[configName]
         }
     }
 
-    private Configuration retrieveConfiguration(String tableName) {
-        synchronized (LOCK) {
-            configurations[tableName]
+    private void storeConfiguration(String configName, Configuration configuration) {
+        synchronized(LOCK) {
+            configurations[configName] = configuration
         }
     }
 }

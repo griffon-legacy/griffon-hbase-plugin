@@ -16,26 +16,27 @@
 
 package griffon.plugins.hbase;
 
-import griffon.util.CallableWithArgs;
-import groovy.lang.Closure;
+import org.apache.hadoop.conf.Configuration;
 
 /**
  * @author Andres Almiray
  */
-public interface HBaseProvider {
-    <R> R withHBase(Closure<R> closure);
+public class DefaultHBaseProvider extends AbstractHBaseProvider {
+    private static final DefaultHBaseProvider INSTANCE;
 
-    <R> R withHBase(String configName, Closure<R> closure);
+    static {
+        INSTANCE = new DefaultHBaseProvider();
+    }
 
-    <R> R withHBase(CallableWithArgs<R> callable);
+    public static DefaultHBaseProvider getInstance() {
+        return INSTANCE;
+    }
 
-    <R> R withHBase(String configName, CallableWithArgs<R> callable);
+    private DefaultHBaseProvider() {
+    }
 
-    <R> R withHTable(String tableName, Closure<R> closure);
-
-    <R> R withHTable(String configName, String tableName, Closure<R> closure);
-
-    <T> T withHTable(String tableName, CallableWithArgs<T> callable);
-
-    <T> T withHTable(String configName, String tableName, CallableWithArgs<T> callable);
+    @Override
+    protected Configuration getConfiguration(String configName) {
+        return ConfigurationHolder.getInstance().fetchConfiguration(configName);
+    }
 }

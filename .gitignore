@@ -1,7 +1,5 @@
 target
 .idea
-.idea
 target
-hbase-griffonPluginFixes.iml
-hbase.iml
 release_notes.md
+*.iml

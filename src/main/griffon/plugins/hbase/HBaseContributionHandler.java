@@ -22,7 +22,11 @@ import groovy.lang.Closure;
 /**
  * @author Andres Almiray
  */
-public interface HBaseProvider {
+public interface HBaseContributionHandler {
+    void setHBaseProvider(HBaseProvider provider);
+
+    HBaseProvider getHBaseProvider();
+
     <R> R withHBase(Closure<R> closure);
 
     <R> R withHBase(String configName, Closure<R> closure);

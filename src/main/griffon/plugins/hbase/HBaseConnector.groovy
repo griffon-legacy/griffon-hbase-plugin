@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,54 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package griffon.plugins.hbase
 
 import griffon.core.GriffonApplication
-import griffon.util.CallableWithArgs
 import griffon.util.ConfigUtils
-import griffon.util.Environment
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.HBaseConfiguration
+
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase.HBaseConfiguration
 
 /**
  * @author Andres Almiray
  */
 @Singleton
-final class HBaseConnector implements HBaseProvider {
+final class HBaseConnector {
+    private static final String DEFAULT = 'default'
+    private static final Logger LOG = LoggerFactory.getLogger(HBaseConnector)
     private bootstrap
 
-    private static final Logger LOG = LoggerFactory.getLogger(HBaseConnector)
-
-    Object withHTable(String configName = 'default', String storeName, Closure closure) {
-        ConfigurationHolder.instance.withHTable(configName, storeName, closure)
-    }
-
-    public <T> T withHTable(String configName = 'default', String storeName, CallableWithArgs<T> callable) {
-        return ConfigurationHolder.instance.withHTable(configName, storeName, callable)
-    }
-
-    Object withHBase(String configName = 'default', Closure closure) {
-        ConfigurationHolder.instance.withHBase(configName, closure)
-    }
-
-    public <T> T withHBase(String configName = 'default', CallableWithArgs<T> callable) {
-        return ConfigurationHolder.instance.withHBase(configName, callable)
-    }
-
-    // ======================================================
-
     ConfigObject createConfig(GriffonApplication app) {
-        ConfigUtils.loadConfigWithI18n('HBaseConfig')
+        if (!app.config.pluginConfig.hbase) {
+            app.config.pluginConfig.hbase = ConfigUtils.loadConfigWithI18n('HBaseConfig')
+        }
+        app.config.pluginConfig.hbase
     }
 
     private ConfigObject narrowConfig(ConfigObject config, String configName) {
-        return configName == 'default' ? config.datastore : config.datastores[configName]
+        if (config.containsKey('database') && configName == DEFAULT) {
+            return config.database
+        } else if (config.containsKey('databases')) {
+            return config.databases[configName]
+        }
+        return config
     }
 
-    Configuration connect(GriffonApplication app, ConfigObject config, String configName = 'default') {
+    Configuration connect(GriffonApplication app, ConfigObject config, String configName = DEFAULT) {
         if (ConfigurationHolder.instance.isConfigurationConnected(configName)) {
             return ConfigurationHolder.instance.getConfiguration(configName)
         }
@@ -71,21 +60,32 @@ final class HBaseConnector implements HBaseProvider {
         ConfigurationHolder.instance.setConfiguration(configName, configuration)
         bootstrap = app.class.classLoader.loadClass('BootstrapHBase').newInstance()
         bootstrap.metaClass.app = app
-        bootstrap.init(configName, configuration)
+        resolveHBaseProvider(app).withHBase { cn, c -> bootstrap.init(cn, c) }
         app.event('HBaseConnectEnd', [configName, configuration])
         configuration
     }
 
-    void disconnect(GriffonApplication app, ConfigObject config, String configName = 'default') {
+    void disconnect(GriffonApplication app, ConfigObject config, String configName = DEFAULT) {
         if (ConfigurationHolder.instance.isConfigurationConnected(configName)) {
             config = narrowConfig(config, configName)
             Configuration configuration = ConfigurationHolder.instance.getConfiguration(configName)
             app.event('HBaseDisconnectStart', [config, configName, configuration])
-            bootstrap.destroy(configName, configuration)
-            // stopHBase(config, configuration)
+            resolveHBaseProvider(app).withHBase { cn, c -> bootstrap.destroy(cn, c) }
             app.event('HBaseDisconnectEnd', [config, configName])
             ConfigurationHolder.instance.disconnectConfiguration(configName)
         }
+    }
+
+    HBaseProvider resolveHBaseProvider(GriffonApplication app) {
+        def hbaseProvider = app.config.hbaseProvider
+        if (hbaseProvider instanceof Class) {
+            hbaseProvider = hbaseProvider.newInstance()
+            app.config.hbaseProvider = hbaseProvider
+        } else if (!hbaseProvider) {
+            hbaseProvider = DefaultHBaseProvider.instance
+            app.config.hbaseProvider = hbaseProvider
+        }
+        hbaseProvider
     }
 
     private Configuration startHBase(ConfigObject config) {
@@ -101,10 +101,4 @@ final class HBaseConnector implements HBaseProvider {
         }
         hadoopConfig
     }
-
-    /*
-    private void stopHBase(ConfigObject config, Configuration configuration) {
-
-    }
-    */
 }
